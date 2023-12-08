@@ -2,7 +2,8 @@ import "./style.css";
 
 const canvas = document.getElementById("game")!;
 const gameHeight = (canvas! as HTMLCanvasElement).height;
-const gameWidth = (canvas! as HTMLCanvasElement).width;
+const gameWidth = (canvas! as HTMLCanvasElement).width * 3/4;
+const uiWidth = (canvas! as HTMLCanvasElement).width - gameWidth;
 const ctx = (canvas! as HTMLCanvasElement).getContext("2d")!;
 
 const CLICKABLE_SIZE = 50;
@@ -103,12 +104,18 @@ function checkAllClickables() {
 }
 
 function drawGame() {
+  // Draws Game Space
   ctx.fillStyle = "#DAE9EF";
   ctx.fillRect(0, 0, gameWidth, gameHeight);
 
+  // Draws All Game Elements
   allClickables.forEach((c) => {
     c.draw();
   });
+
+  // Draws UI Bar
+  ctx.fillStyle = "#8BA4B4";
+  ctx.fillRect(gameWidth, 0, uiWidth, gameHeight);
 }
 
 function setGame(numClickables: number) {
