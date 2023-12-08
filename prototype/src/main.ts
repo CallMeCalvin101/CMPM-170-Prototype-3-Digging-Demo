@@ -7,8 +7,7 @@ const ctx = (canvas! as HTMLCanvasElement).getContext("2d")!;
 
 const CLICKABLE_SIZE = 50;
 
-ctx.fillStyle = "#DAE9EF";
-ctx.fillRect(0, 0, gameWidth, gameHeight);
+const drawingChangedEvent: Event = new Event("drawing-changed");
 
 // Define all states of the game
 const states = Object.freeze({
@@ -17,10 +16,10 @@ const states = Object.freeze({
 });
 
 const gameController = { curState: 0, curOrder: 0 };
-
 gameController.curState = states.startGame;
 
 const gameMouse = { x: 0, y: 0 };
+let allClickables: Clickable[] = [];
 
 function updateMousePos(x: number, y: number) {
   gameMouse.x = x;
@@ -60,6 +59,10 @@ class Clickable {
   }
 }
 
+canvas.addEventListener("drawing-changed", () => {
+  drawGame();
+});
+
 canvas.addEventListener("mouseenter", (e) => {
   updateMousePos(e.offsetX, e.offsetY);
 });
@@ -70,7 +73,48 @@ canvas.addEventListener("mousemove", (e) => {
 
 canvas.addEventListener("mousedown", (e) => {
   updateMousePos(e.offsetX, e.offsetY);
+  checkAllClickables();
+  if (allClickables.length <= 0) {
+    setGame(3);
+  }
+  canvas.dispatchEvent(drawingChangedEvent);
 });
 
-const testClickable = new Clickable(gameHeight / 2, gameWidth / 2, 1);
-testClickable.draw();
+function generateNewClickables(numToCreate: number) {
+  for (let i = 0; i < numToCreate; i++) {
+    const c = new Clickable(
+      Math.random() * gameWidth,
+      Math.random() * gameHeight,
+      i
+    );
+
+    allClickables.push(c);
+  }
+}
+
+function checkAllClickables() {
+  allClickables.forEach((c) => {
+    if (c.isMouseInside() && c.order == gameController.curOrder) {
+      gameController.curOrder += 1;
+      allClickables = allClickables.slice(1);
+      return;
+    }
+  });
+}
+
+function drawGame() {
+  ctx.fillStyle = "#DAE9EF";
+  ctx.fillRect(0, 0, gameWidth, gameHeight);
+
+  allClickables.forEach((c) => {
+    c.draw();
+  });
+}
+
+function setGame(numClickables: number) {
+  generateNewClickables(numClickables);
+  gameController.curOrder = 0;
+}
+
+setGame(3);
+drawGame();
