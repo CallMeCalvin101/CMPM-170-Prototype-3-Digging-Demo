@@ -1,6 +1,4 @@
-import { defineConfig } from 'vite'
-
-// https://vitejs.dev/config/
-export default defineConfig({
-  base: '/vite-deploy-demo/'
-})
+export default {
+  // eslint-disable-next-line no-undef
+  base: process.env.REPO_NAME || "/repo-name/",
+};
