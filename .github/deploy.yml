@@ -20,6 +20,9 @@ jobs:
       - name: Install dependencies
         uses: bahmutov/npm-install@v1
 
+      - name: Open project
+        run: cd .\prototype\
+
       - name: Build project
         run: npm run build
 
