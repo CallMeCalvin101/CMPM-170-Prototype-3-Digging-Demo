@@ -9,6 +9,7 @@ const uiWidth = (canvas! as HTMLCanvasElement).width - gameWidth;
 const ctx = (canvas! as HTMLCanvasElement).getContext("2d")!;
 
 const CLICKABLE_SIZE = 50;
+const MAX_WAVE_PER_ROUND = 7;
 
 const drawingChangedEvent: Event = new Event("drawing-changed");
 
@@ -18,14 +19,12 @@ const states = Object.freeze({
   playingGame: 1,
 });
 
-const gameController = { curState: 0, curOrder: 0 };
+const gameController = { curState: 0, curOrder: 0, curWave: 0 };
 gameController.curState = states.startGame;
 
 const gameMouse = { x: 0, y: 0 };
 let allClickables: Clickable[] = [];
 let allItems: Item[] = [];
-
-let curWave = 0;
 
 function updateMousePos(x: number, y: number) {
   gameMouse.x = x;
@@ -128,8 +127,14 @@ canvas.addEventListener("mousemove", (e) => {
 canvas.addEventListener("mousedown", (e) => {
   updateMousePos(e.offsetX, e.offsetY);
   checkAllClickables();
+
   if (allClickables.length <= 0) {
     setGame();
+  }
+
+  if (gameController.curWave >= MAX_WAVE_PER_ROUND) {
+    allItems[Math.floor(allItems.length * Math.random())].enable();
+    gameController.curWave = 0;
   }
 
   allItems.forEach((c) => {
@@ -144,18 +149,6 @@ canvas.addEventListener("mousedown", (e) => {
 function updateItemDescriptions(item: Item) {
   const itemUIText = document.getElementById("itemInfo")!;
   itemUIText.innerHTML = `<strong>${item.name}</strong>: ${item.description}`;
-}
-
-function generateNewClickables(numToCreate: number) {
-  for (let i = 0; i < numToCreate; i++) {
-    const c = new Clickable(
-      Math.random() * gameWidth,
-      Math.random() * gameHeight,
-      i
-    );
-
-    allClickables.push(c);
-  }
 }
 
 function getRandomWaveSpawnCenter(): Coordinate {
@@ -185,11 +178,9 @@ function spawnClickableWave(wave: Coordinate[]) {
 }
 
 function spawnNextWave() {
-  if (curWave >= WAVE_LIST.length) {
-    curWave = 0;
-  }
-  spawnClickableWave(WAVE_LIST[curWave]);
-  curWave += 1;
+  const randomWave = Math.floor(WAVE_LIST.length * Math.random());
+  spawnClickableWave(WAVE_LIST[randomWave]);
+  gameController.curWave += 1;
 }
 
 function checkAllClickables() {
@@ -267,5 +258,6 @@ function setGame() {
 }
 
 setGame();
+gameController.curWave = 0;
 generateAllItems();
 drawGame();
