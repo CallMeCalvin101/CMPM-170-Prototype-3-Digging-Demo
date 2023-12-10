@@ -2,7 +2,7 @@ import "./style.css";
 
 const canvas = document.getElementById("game")!;
 const gameHeight = (canvas! as HTMLCanvasElement).height;
-const gameWidth = (canvas! as HTMLCanvasElement).width * 3/4;
+const gameWidth = ((canvas! as HTMLCanvasElement).width * 3) / 4;
 const uiWidth = (canvas! as HTMLCanvasElement).width - gameWidth;
 const ctx = (canvas! as HTMLCanvasElement).getContext("2d")!;
 
@@ -21,6 +21,7 @@ gameController.curState = states.startGame;
 
 const gameMouse = { x: 0, y: 0 };
 let allClickables: Clickable[] = [];
+let allItems: Item[] = [];
 
 function updateMousePos(x: number, y: number) {
   gameMouse.x = x;
@@ -60,6 +61,35 @@ class Clickable {
   }
 }
 
+class Item {
+  constructor(
+    readonly name: string,
+    readonly description: string,
+    readonly xPos: number,
+    readonly yPos: number,
+    readonly size = CLICKABLE_SIZE
+  ) {}
+
+  isMouseInside(): boolean {
+    return (
+      gameMouse.x > this.xPos - CLICKABLE_SIZE / 2 &&
+      gameMouse.x < this.xPos + CLICKABLE_SIZE / 2 &&
+      gameMouse.y > this.yPos - CLICKABLE_SIZE / 2 &&
+      gameMouse.y < this.yPos + CLICKABLE_SIZE / 2
+    );
+  }
+
+  draw() {
+    ctx.fillStyle = "black";
+    ctx.fillRect(
+      this.xPos - this.size / 2,
+      this.yPos - this.size / 2,
+      this.size,
+      this.size
+    );
+  }
+}
+
 canvas.addEventListener("drawing-changed", () => {
   drawGame();
 });
@@ -70,6 +100,7 @@ canvas.addEventListener("mouseenter", (e) => {
 
 canvas.addEventListener("mousemove", (e) => {
   updateMousePos(e.offsetX, e.offsetY);
+  checkAllItems();
 });
 
 canvas.addEventListener("mousedown", (e) => {
@@ -80,6 +111,11 @@ canvas.addEventListener("mousedown", (e) => {
   }
   canvas.dispatchEvent(drawingChangedEvent);
 });
+
+function updateItemDescriptions(item: Item) {
+  const itemUIText = document.getElementById("itemInfo")!;
+  itemUIText.innerHTML = `${item.name}: ${item.description}`;
+}
 
 function generateNewClickables(numToCreate: number) {
   for (let i = 0; i < numToCreate; i++) {
@@ -103,6 +139,14 @@ function checkAllClickables() {
   });
 }
 
+function checkAllItems() {
+  allItems.forEach((c) => {
+    if (c.isMouseInside()) {
+      updateItemDescriptions(c);
+    }
+  });
+}
+
 function drawGame() {
   // Draws Game Space
   ctx.fillStyle = "#DAE9EF";
@@ -116,12 +160,34 @@ function drawGame() {
   // Draws UI Bar
   ctx.fillStyle = "#8BA4B4";
   ctx.fillRect(gameWidth, 0, uiWidth, gameHeight);
+
+  allItems.forEach((i) => {
+    i.draw();
+  });
 }
 
 function setGame(numClickables: number) {
   generateNewClickables(numClickables);
   gameController.curOrder = 0;
 }
+
+allItems.push(
+  new Item(
+    "test",
+    "this is a test item to code the game with",
+    gameWidth + uiWidth / 2,
+    gameHeight / 4
+  )
+);
+
+allItems.push(
+  new Item(
+    "testing part 2",
+    "this is a newer test item to code the game with",
+    gameWidth + uiWidth / 2,
+    gameHeight / 2
+  )
+);
 
 setGame(4);
 drawGame();
