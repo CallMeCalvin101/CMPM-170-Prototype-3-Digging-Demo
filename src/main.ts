@@ -1,5 +1,6 @@
 import "./style.css";
 import itemJson from "./items.json";
+import { WAVE_LIST } from "./patterns.ts";
 
 const canvas = document.getElementById("game")!;
 const gameHeight = (canvas! as HTMLCanvasElement).height;
@@ -24,10 +25,17 @@ const gameMouse = { x: 0, y: 0 };
 let allClickables: Clickable[] = [];
 let allItems: Item[] = [];
 
+let curWave = 0;
+
 function updateMousePos(x: number, y: number) {
   gameMouse.x = x;
   gameMouse.y = y;
 }
+
+type Coordinate = {
+  x: number;
+  y: number;
+};
 
 class Clickable {
   constructor(
@@ -98,6 +106,10 @@ class Item {
   enable() {
     this.state = true;
   }
+
+  isEnabled(): boolean {
+    return this.state;
+  }
 }
 
 canvas.addEventListener("drawing-changed", () => {
@@ -117,7 +129,7 @@ canvas.addEventListener("mousedown", (e) => {
   updateMousePos(e.offsetX, e.offsetY);
   checkAllClickables();
   if (allClickables.length <= 0) {
-    setGame(3);
+    setGame();
   }
 
   allItems.forEach((c) => {
@@ -144,6 +156,40 @@ function generateNewClickables(numToCreate: number) {
 
     allClickables.push(c);
   }
+}
+
+function getRandomWaveSpawnCenter(): Coordinate {
+  const WAVE_BOUND = 500;
+  const min = 1.5 * CLICKABLE_SIZE + WAVE_BOUND / 2;
+  const maxX = gameWidth - min;
+  const maxY = gameHeight - min;
+
+  console.log(`${min}`, `${maxX}`);
+  console.log(`${min}`, `${maxY}`);
+
+  return {
+    x: min - WAVE_BOUND / 2 + (maxX - min) * Math.random(),
+    y: min - WAVE_BOUND / 2 + (maxY - min) * Math.random(),
+  };
+}
+
+function spawnClickableWave(wave: Coordinate[]) {
+  let orderToSet = 0;
+  const center = getRandomWaveSpawnCenter();
+  wave.forEach((coord) => {
+    allClickables.push(
+      new Clickable(coord.x + center.x, coord.y + center.y, orderToSet)
+    );
+    orderToSet += 1;
+  });
+}
+
+function spawnNextWave() {
+  if (curWave >= WAVE_LIST.length) {
+    curWave = 0;
+  }
+  spawnClickableWave(WAVE_LIST[curWave]);
+  curWave += 1;
 }
 
 function checkAllClickables() {
@@ -190,7 +236,7 @@ function generateAllItems() {
 
 function checkAllItems() {
   allItems.forEach((c) => {
-    if (c.isMouseInside()) {
+    if (c.isMouseInside() && c.isEnabled()) {
       updateItemDescriptions(c);
     }
   });
@@ -215,11 +261,11 @@ function drawGame() {
   });
 }
 
-function setGame(numClickables: number) {
-  generateNewClickables(numClickables);
-  generateAllItems();
+function setGame() {
+  spawnNextWave();
   gameController.curOrder = 0;
 }
 
-setGame(4);
+setGame();
+generateAllItems();
 drawGame();
