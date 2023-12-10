@@ -15,16 +15,18 @@ const drawingChangedEvent: Event = new Event("drawing-changed");
 
 // Define all states of the game
 const states = Object.freeze({
-  startGame: 0,
-  playingGame: 1,
+  playingGame: 0,
+  endOfRound: 1,
 });
 
 const gameController = { curState: 0, curOrder: 0, curWave: 0 };
-gameController.curState = states.startGame;
+gameController.curState = states.playingGame;
 
 const gameMouse = { x: 0, y: 0 };
 let allClickables: Clickable[] = [];
 let allItems: Item[] = [];
+let dugHoles: Coordinate[] = [];
+let lastRewardedItem = allItems[0];
 
 function updateMousePos(x: number, y: number) {
   gameMouse.x = x;
@@ -55,16 +57,16 @@ class Clickable {
 
   draw() {
     ctx.beginPath();
-    ctx.fillStyle = "red";
+    ctx.strokeStyle = "#0D0903";
     ctx.arc(this.xPos, this.yPos, this.size, 0, 2 * Math.PI);
-    ctx.fill();
+    ctx.stroke();
 
     ctx.fillStyle = "black";
     ctx.font = `${this.size}px sans-serif`;
     ctx.fillText(
       `${this.order}`,
-      this.xPos - this.size / 4,
-      this.yPos + this.size / 4
+      this.xPos - this.size / 3 + 3,
+      this.yPos + this.size / 3
     );
   }
 }
@@ -126,25 +128,33 @@ canvas.addEventListener("mousemove", (e) => {
 
 canvas.addEventListener("mousedown", (e) => {
   updateMousePos(e.offsetX, e.offsetY);
-  checkAllClickables();
+
+  if (gameController.curState == states.playingGame) {
+    checkAllClickables();
+  } else if (gameController.curState == states.endOfRound) {
+    dugHoles = [];
+    gameController.curState = states.playingGame;
+  }
 
   if (allClickables.length <= 0) {
-    setGame();
+    resetWaves();
   }
 
   if (gameController.curWave >= MAX_WAVE_PER_ROUND) {
-    allItems[Math.floor(allItems.length * Math.random())].enable();
-    gameController.curWave = 0;
+    completeGameRound();
   }
-
-  allItems.forEach((c) => {
-    if (c.isMouseInside()) {
-      c.enable();
-    }
-  });
 
   canvas.dispatchEvent(drawingChangedEvent);
 });
+
+function completeGameRound() {
+  const rewardedItem = allItems[Math.floor(allItems.length * Math.random())];
+  rewardedItem.enable();
+  lastRewardedItem = rewardedItem;
+  updateItemDescriptions(rewardedItem);
+  gameController.curWave = 0;
+  gameController.curState = states.endOfRound;
+}
 
 function updateItemDescriptions(item: Item) {
   const itemUIText = document.getElementById("itemInfo")!;
@@ -187,6 +197,7 @@ function checkAllClickables() {
   allClickables.forEach((c) => {
     if (c.isMouseInside() && c.order == gameController.curOrder) {
       gameController.curOrder += 1;
+      dugHoles.push({ x: c.xPos, y: c.yPos });
       allClickables = allClickables.slice(1);
       return;
     }
@@ -234,13 +245,25 @@ function checkAllItems() {
 }
 
 function drawGame() {
-  // Draws Game Space
-  ctx.fillStyle = "#DAE9EF";
+  drawBackground();
+  if (gameController.curState == states.playingGame) {
+    drawGameplay();
+  } else if (gameController.curState == states.endOfRound) {
+    drawReward(lastRewardedItem);
+  }
+}
+
+function drawBackground() {
+  // Draws Background
+  ctx.fillStyle = "#565902";
   ctx.fillRect(0, 0, gameWidth, gameHeight);
 
-  // Draws All Game Elements
-  allClickables.forEach((c) => {
-    c.draw();
+  //Draws All Dug Out Holes
+  dugHoles.forEach((hole) => {
+    ctx.beginPath();
+    ctx.fillStyle = "#593723";
+    ctx.arc(hole.x, hole.y, CLICKABLE_SIZE, 0, 2 * Math.PI);
+    ctx.fill();
   });
 
   // Draws UI Bar
@@ -252,12 +275,46 @@ function drawGame() {
   });
 }
 
-function setGame() {
+function drawGameplay() {
+  // Draws All Game Elements
+  allClickables.forEach((c) => {
+    c.draw();
+  });
+}
+
+function drawReward(item: Item) {
+  // Draws hole for item
+  ctx.beginPath();
+  ctx.fillStyle = "#593723";
+  ctx.arc(gameWidth / 2, gameHeight / 2, item.size * 3, 0, 2 * Math.PI);
+  ctx.fill();
+
+  // Draws item
+  ctx.fillStyle = "white";
+  ctx.fillRect(
+    gameWidth / 2 - item.size / 2,
+    gameHeight / 2 - item.size / 2,
+    item.size,
+    item.size
+  );
+
+  ctx.fillStyle = "black";
+  ctx.font = `${item.size}px sans-serif`;
+  const rewardText = `You Dug Up: ${item.name}`;
+  ctx.fillText(
+    rewardText,
+    gameWidth / 2 - rewardText.length * 12,
+    gameHeight / 5
+  );
+}
+
+function resetWaves() {
   spawnNextWave();
   gameController.curOrder = 0;
 }
 
-setGame();
+resetWaves();
 gameController.curWave = 0;
 generateAllItems();
+console.log(gameController);
 drawGame();
