@@ -1,4 +1,5 @@
 import "./style.css";
+import itemJson from "./items.json";
 
 const canvas = document.getElementById("game")!;
 const gameHeight = (canvas! as HTMLCanvasElement).height;
@@ -67,7 +68,8 @@ class Item {
     readonly description: string,
     readonly xPos: number,
     readonly yPos: number,
-    readonly size = CLICKABLE_SIZE
+    readonly size = CLICKABLE_SIZE,
+    private state = false
   ) {}
 
   isMouseInside(): boolean {
@@ -80,13 +82,21 @@ class Item {
   }
 
   draw() {
-    ctx.fillStyle = "black";
+    if (this.state) {
+      ctx.fillStyle = "white";
+    } else {
+      ctx.fillStyle = "black";
+    }
     ctx.fillRect(
       this.xPos - this.size / 2,
       this.yPos - this.size / 2,
       this.size,
       this.size
     );
+  }
+
+  enable() {
+    this.state = true;
   }
 }
 
@@ -109,12 +119,19 @@ canvas.addEventListener("mousedown", (e) => {
   if (allClickables.length <= 0) {
     setGame(3);
   }
+
+  allItems.forEach((c) => {
+    if (c.isMouseInside()) {
+      c.enable();
+    }
+  });
+
   canvas.dispatchEvent(drawingChangedEvent);
 });
 
 function updateItemDescriptions(item: Item) {
   const itemUIText = document.getElementById("itemInfo")!;
-  itemUIText.innerHTML = `${item.name}: ${item.description}`;
+  itemUIText.innerHTML = `<strong>${item.name}</strong>: ${item.description}`;
 }
 
 function generateNewClickables(numToCreate: number) {
@@ -136,6 +153,38 @@ function checkAllClickables() {
       allClickables = allClickables.slice(1);
       return;
     }
+  });
+}
+
+function generateAllItems() {
+  let itemCount = 1;
+  const itemYOffset = gameHeight / (itemJson.Items["Normal Items"].length + 1);
+  itemJson.Items["Normal Items"].forEach((item) => {
+    allItems.push(
+      new Item(
+        item.Name,
+        item.Description,
+        gameWidth + uiWidth / 3,
+        itemCount * itemYOffset
+      )
+    );
+    itemCount += 1;
+  });
+
+  itemCount =
+    itemJson.Items["Normal Items"].length -
+    itemJson.Items["Story Items"].length;
+
+  itemJson.Items["Story Items"].forEach((item) => {
+    allItems.push(
+      new Item(
+        item.Name,
+        item.Description,
+        gameWidth + (uiWidth * 2) / 3,
+        itemCount * itemYOffset
+      )
+    );
+    itemCount += 1;
   });
 }
 
@@ -168,26 +217,9 @@ function drawGame() {
 
 function setGame(numClickables: number) {
   generateNewClickables(numClickables);
+  generateAllItems();
   gameController.curOrder = 0;
 }
-
-allItems.push(
-  new Item(
-    "test",
-    "this is a test item to code the game with",
-    gameWidth + uiWidth / 2,
-    gameHeight / 4
-  )
-);
-
-allItems.push(
-  new Item(
-    "testing part 2",
-    "this is a newer test item to code the game with",
-    gameWidth + uiWidth / 2,
-    gameHeight / 2
-  )
-);
 
 setGame(4);
 drawGame();
