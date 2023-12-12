@@ -179,9 +179,6 @@ function getRandomWaveSpawnCenter(): Coordinate {
   const maxX = gameWidth - min;
   const maxY = gameHeight - min;
 
-  console.log(`${min}`, `${maxX}`);
-  console.log(`${min}`, `${maxY}`);
-
   return {
     x: min - WAVE_BOUND / 2 + (maxX - min) * Math.random(),
     y: min - WAVE_BOUND / 2 + (maxY - min) * Math.random(),
@@ -330,5 +327,4 @@ function resetWaves() {
 resetWaves();
 gameController.curWave = 0;
 generateAllItems();
-console.log(gameController);
 drawGame();
