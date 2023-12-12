@@ -72,14 +72,20 @@ class Clickable {
 }
 
 class Item {
+  img: HTMLImageElement;
+
   constructor(
     readonly name: string,
     readonly description: string,
     readonly xPos: number,
     readonly yPos: number,
+    imagePath: string,
     readonly size = CLICKABLE_SIZE,
     private state = false
-  ) {}
+  ) {
+    this.img = new Image();
+    this.img.src = imagePath;
+  }
 
   isMouseInside(): boolean {
     return (
@@ -92,16 +98,22 @@ class Item {
 
   draw() {
     if (this.state) {
-      ctx.fillStyle = "white";
+      ctx.drawImage(
+        this.img,
+        this.xPos - this.size / 2,
+        this.yPos - this.size / 2,
+        this.size,
+        this.size
+      );
     } else {
       ctx.fillStyle = "black";
+      ctx.fillRect(
+        this.xPos - this.size / 2,
+        this.yPos - this.size / 2,
+        this.size,
+        this.size
+      );
     }
-    ctx.fillRect(
-      this.xPos - this.size / 2,
-      this.yPos - this.size / 2,
-      this.size,
-      this.size
-    );
   }
 
   enable() {
@@ -213,7 +225,8 @@ function generateAllItems() {
         item.Name,
         item.Description,
         gameWidth + uiWidth / 3,
-        itemCount * itemYOffset
+        itemCount * itemYOffset,
+        item.Image
       )
     );
     itemCount += 1;
@@ -229,7 +242,8 @@ function generateAllItems() {
         item.Name,
         item.Description,
         gameWidth + (uiWidth * 2) / 3,
-        itemCount * itemYOffset
+        itemCount * itemYOffset,
+        item.Image
       )
     );
     itemCount += 1;
@@ -290,8 +304,8 @@ function drawReward(item: Item) {
   ctx.fill();
 
   // Draws item
-  ctx.fillStyle = "white";
-  ctx.fillRect(
+  ctx.drawImage(
+    item.img,
     gameWidth / 2 - item.size / 2,
     gameHeight / 2 - item.size / 2,
     item.size,
